@@ -38,6 +38,9 @@ void get_username(uid_t uid, char *user) {
 
 // Função para obter as informações do processo
 void fetch_process_info() {
+    // Limpa a lista de processos para atualizar com dados recentes
+    memset(processes, 0, sizeof(processes));
+    
     DIR *proc_dir = opendir("/proc");
     struct dirent *entry;
     int count = 0;
