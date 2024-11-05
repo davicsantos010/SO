@@ -75,10 +75,10 @@ void fetch_process_info() {
 // Função para exibir os processos em formato de tabela
 void display_processes() {
     system("clear");
-    printf("PID    | User       | PROCNAME          | Estado\n");
-    printf("-------|------------|-------------------|--------\n");
+    printf("PID    | User            | PROCNAME          | Estado\n");
+    printf("-------|-----------------|-------------------|--------\n");
     for (int i = 0; i < MAX_PROCS && processes[i].pid != 0; i++) {
-        printf("%-7d| %-10s| %-17s| %c\n",
+        printf("%-7d| %-16s| %-18s| %c\n",
                processes[i].pid, processes[i].user, processes[i].name, processes[i].state);
     }
 }
@@ -99,7 +99,6 @@ void *handle_input(void *arg) {
     int pid, signal;
 
     while (!should_exit) {
-        printf("\nEnter '<PID> <SIGNAL>' to send signal, 'q' to quit: ");
         fflush(stdout);
         if (fgets(input, sizeof(input), stdin) == NULL) continue;
 
