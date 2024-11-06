@@ -12,8 +12,8 @@
 #include <errno.h>
 #include <time.h>
 
-#define MAX_PROCS 20
-#define REFRESH_INTERVAL 1
+#define MAX_PROCS 20 //define o numero maximo de processos exibidos
+#define REFRESH_INTERVAL 1 //define o intervalo de atualizacao em segundos
 
 typedef struct {
     int pid;
@@ -23,25 +23,25 @@ typedef struct {
 } ProcessInfo;
 
 ProcessInfo processes[MAX_PROCS];
-int should_exit = 0;
+int should_exit = 0; //indica quando o programa deve encerrar
 
-// Função para obter o nome do usuário pelo UID
+//funcao para obter o nome do usuario pelo UID
 void get_username(uid_t uid, char *user) {
     struct passwd *pw = getpwuid(uid);
     if (pw) {
         strncpy(user, pw->pw_name, 31);
         user[31] = '\0';
     } else {
-        snprintf(user, 32, "%d", uid);
+        snprintf(user, 32, "%d", uid); //usa o UID como nome caso nao encontre o usuario
     }
 }
 
-// Função para obter as informações do processo
+//funcao para obter as informacoes do processo
 void fetch_process_info() {
-    // Limpa a lista de processos para atualizar com dados recentes
+    //limpa a lista de processos para atualizar com dados recentes
     memset(processes, 0, sizeof(processes));
     
-    DIR *proc_dir = opendir("/proc");
+    DIR *proc_dir = opendir("/proc"); //abre o diretorio /proc
     struct dirent *entry;
     int count = 0;
 
@@ -49,16 +49,16 @@ void fetch_process_info() {
         if (entry->d_type == DT_DIR && isdigit(entry->d_name[0])) {
             int pid = atoi(entry->d_name);
             char path[256], comm[256], state;
-            snprintf(path, sizeof(path), "/proc/%d/stat", pid);
+            snprintf(path, sizeof(path), "/proc/%d/stat", pid); //cria caminho para o arquivo stat
 
-            FILE *stat_file = fopen(path, "r");
+            FILE *stat_file = fopen(path, "r"); //abre o arquivo stat do processo
             if (!stat_file) continue;
 
-            // Obtém o nome e o estado do processo
+            //obtem o nome e o estado do processo
             fscanf(stat_file, "%*d (%[^)]) %c", comm, &state);
             fclose(stat_file);
 
-            // Obtém o UID do processo
+            //obtem o UID do processo
             snprintf(path, sizeof(path), "/proc/%d", pid);
             struct stat info;
             if (stat(path, &info) == -1) continue;
@@ -75,9 +75,9 @@ void fetch_process_info() {
     closedir(proc_dir);
 }
 
-// Função para exibir os processos em formato de tabela
+//funcao para exibir os processos em formato de tabela
 void display_processes() {
-    system("clear");
+    system("clear"); //limpa a tela para atualizar a exibicao
     printf("PID    | User            | PROCNAME          | Estado\n");
     printf("-------|-----------------|-------------------|--------\n");
     for (int i = 0; i < MAX_PROCS && processes[i].pid != 0; i++) {
@@ -86,17 +86,17 @@ void display_processes() {
     }
 }
 
-// Thread que atualiza a tabela de processos a cada 1 segundo
+//thread que atualiza a tabela de processos a cada 1 segundo
 void *update_display(void *arg) {
     while (!should_exit) {
         fetch_process_info();
         display_processes();
-        sleep(REFRESH_INTERVAL);
+        sleep(REFRESH_INTERVAL); //espera 1 segundo antes da proxima atualizacao
     }
     return NULL;
 }
 
-// Thread que gerencia a entrada do usuário para envio de sinais
+//thread que gerencia a entrada do usuario para envio de sinais
 void *handle_input(void *arg) {
     char input[256];
     int pid, signal;
@@ -105,17 +105,17 @@ void *handle_input(void *arg) {
         fflush(stdout);
         if (fgets(input, sizeof(input), stdin) == NULL) continue;
 
-        if (input[0] == 'q') {
+        if (input[0] == 'q') { //sai do programa se o usuario digitar 'q'
             should_exit = 1;
             break;
         } else if (sscanf(input, "%d %d", &pid, &signal) == 2) {
             if (kill(pid, signal) == 0) {
-                printf("Signal %d sent to PID %d.\n", signal, pid);
+                printf("Sinal %d enviado ao PID %d.\n", signal, pid);
             } else {
-                printf("Failed to send signal to PID %d: %s\n", pid, strerror(errno));
+                printf("Falha ao enviar sinal ao PID %d: %s\n", pid, strerror(errno));
             }
         } else {
-            printf("Invalid input. Please enter '<PID> <SIGNAL>' or 'q' to quit.\n");
+            printf("Entrada invalida. Digite '<PID> <SIGNAL>' ou 'q' para sair.\n");
         }
     }
     return NULL;
@@ -124,14 +124,13 @@ void *handle_input(void *arg) {
 int main() {
     pthread_t display_thread, input_thread;
 
-    // Cria as threads para atualizar a tabela e capturar a entrada do usuário
+    //cria as threads para atualizar a tabela e capturar a entrada do usuario
     pthread_create(&display_thread, NULL, update_display, NULL);
     pthread_create(&input_thread, NULL, handle_input, NULL);
 
-    // Aguarda até que ambas as threads terminem
+    //aguarda ate que ambas as threads terminem
     pthread_join(display_thread, NULL);
     pthread_join(input_thread, NULL);
 
-    printf("Exiting meutop.\n");
     return 0;
 }
